@@ -1,0 +1,6 @@
+C:\Angular2\TypeScriptTutorial\TypeScriptTutorial\bin\TypeScriptTutorial.dll.config
+C:\Angular2\TypeScriptTutorial\TypeScriptTutorial\bin\TypeScriptTutorial.dll
+C:\Angular2\TypeScriptTutorial\TypeScriptTutorial\bin\TypeScriptTutorial.pdb
+C:\Angular2\TypeScriptTutorial\TypeScriptTutorial\obj\Debug\TypeScriptTutorial.csprojResolveAssemblyReference.cache
+C:\Angular2\TypeScriptTutorial\TypeScriptTutorial\obj\Debug\TypeScriptTutorial.dll
+C:\Angular2\TypeScriptTutorial\TypeScriptTutorial\obj\Debug\TypeScriptTutorial.pdb

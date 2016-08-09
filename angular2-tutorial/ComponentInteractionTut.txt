@@ -1,0 +1,398 @@
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////Component Interaction//////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+To start app delete everything below this point
+/*With input properties
+
+@Component({
+  selector: 'hero-child',
+  template: `
+    <h3>{{hero.name}} says:</h3>
+    <p>I, {{hero.name}}, am at your service, {{masterName}}.</p>
+  `
+})
+export class HeroChildComponent {
+  @Input() hero: Hero;
+  @Input('master') masterName: string;
+}
+
+The second @Input aliases the child component property name masterName as 'master'. Which is binded in this:
+
+@Component({
+  selector: 'hero-parent',
+  template: `
+    <h2>{{master}} controls {{heroes.length}} heroes</h2>
+    <hero-child *ngFor="let hero of heroes"
+      [hero]="hero"
+      [master]="master">
+    </hero-child>
+  `,
+  directives: [HeroChildComponent]
+})
+export class HeroParentComponent {
+  heroes = HEROES;
+  master: string = 'Master';
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+With Input Property Setters
+
+@Component({
+  selector: 'name-child',
+  template: `
+    <h3>"{{name}}"</h3>
+  `
+})
+export class NameChildComponent {
+  _name: string = '<no name set>';
+  @Input()
+  set name(name: string) {
+    this._name = (name && name.trim()) || '<no name set>';
+  }
+  get name() { return this._name; }
+}
+
+@Component({
+  selector: 'name-parent',
+  template: `
+    <h2>Master controls {{names.length}} names</h2>
+    <name-child *ngFor="let name of names"
+      [name]="name">
+    </name-child>
+  `,
+  directives: [NameChildComponent]
+})
+export class NameParentComponent {
+  // Displays 'Mr. IQ', '<no name set>', 'Bombasto'
+  names = ['Mr. IQ', '   ', '  Bombasto  '];
+}
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+Intercept input property changes with ngOnChanges
+Detect and act upon changes to input property values with the ngOnChanges method of the OnChanges lifecycle hook interface.
+
+This VersionChildComponent detects changes to the major and minor input properties and composes a log message reporting these changes:
+
+imporrt { Component, Input, OnChanges, SimpleChange } from '@angular/core';
+
+@Component({
+  selector: 'version-child',
+  template: `
+    <h3>Version {{major}}.{{minor}}</h3>
+    <h4>Change log:</h4>
+    <ul>
+      <li *ngFor="let change of changeLog">{{change}}</li>
+    </ul>
+  `
+})
+export class VersionChildComponent implements OnChanges {
+  @Input() major: number;
+  @Input() minor: number;
+  changeLog: string[] = [];
+
+  ngOnChanges(changes: {[propKey: string]: SimpleChange}) { 
+  //This means changes is a varible such that is you index it with a string, you get s SimpleChange type back
+    let log: string[] = [];
+    for (let propName in changes) {
+      let changedProp = changes[propName];
+      let from = JSON.stringify(changedProp.previousValue);
+      let to =   JSON.stringify(changedProp.currentValue);
+      log.push( `${propName} changed from ${from} to ${to}`);
+    }
+    this.changeLog.push(log.join(', '));
+  }
+}
+
+//The VersionParentComponent supplies the minor and major values and binds buttons to methods that change them.
+
+@Component({
+  selector: 'version-parent',
+  template: `
+    <h2>Source code version</h2>
+    <button (click)="newMinor()">New minor version</button>
+    <button (click)="newMajor()">New major version</button>
+    <version-child [major]="major" [minor]="minor"></version-child>
+  `,
+  directives: [VersionChildComponent]
+})
+export class VersionParentComponent {
+  major: number = 1;
+  minor: number = 23;
+  newMinor() {
+    this.minor++;
+  }
+  newMajor() {
+    this.major++;
+    this.minor = 0;
+  }
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+The child component exposes an EventEmitter property with which it emitsevents when something happens. 
+The parent binds to that event property and reacts to those events. Think of event emitters as click to code.
+
+@Component({
+  selector: 'my-voter',
+  template: `
+    <h4>{{name}}</h4>
+    <button (click)="vote(true)"  [disabled]="voted">Agree</button>
+    <button (click)="vote(false)" [disabled]="voted">Disagree</button>
+  `
+})
+export class VoterComponent {
+  @Input()  name: string;
+  @Output() onVoted = new EventEmitter<boolean>();
+  voted = false;
+  vote(agreed: boolean) {
+    this.onVoted.emit(agreed);
+    this.voted = true;
+  }
+}
+
+@Component({
+  selector: 'vote-taker',
+  template: `
+    <h2>Should mankind colonize the Universe?</h2>
+    <h3>Agree: {{agreed}}, Disagree: {{disagreed}}</h3>
+    <my-voter *ngFor="let voter of voters"
+      [name]="voter"
+      (onVoted)="onVoted($event)">
+    </my-voter>
+  `,
+  directives: [VoterComponent]
+})
+export class VoteTakerComponent {
+  agreed = 0;
+  disagreed = 0;
+  voters = ['Mr. IQ', 'Ms. Universe', 'Bombasto'];
+  onVoted(agreed: boolean) {
+    agreed ? this.agreed++ : this.disagreed++;
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+Parent interacts with child via local variable (template refernce variable) (Limit is parent can only wire with child on parents template)
+
+A parent component cannot use data binding to read child properties or invoke child methods. 
+We can do both by creating a template reference variable for the child element and then reference that variable within the parent 
+The parent component cannot data bind to the child's start and stop methods nor to its seconds property.
+We can place a local variable (#timer) on the tag (<countdown-timer>) representing the child component. 
+That gives us a reference to the child component itself and the ability to access 
+any of its properties or methods from within the parent template.
+In this example, we wire parent buttons to the child's start and stop and use interpolation to display the child's seconds property.
+
+imporrt { Component, OnDestroy, OnInit } from '@angular/core';
+
+@Component({
+  selector: 'countdown-timer',
+  template: '<p>{{message}}</p>'
+})
+export class CountdownTimerComponent implements OnInit, OnDestroy {
+  intervalId = 0;
+  message = '';
+  seconds = 11;
+  clearTimer() { clearInterval(this.intervalId); }
+  ngOnInit()    { this.start(); }
+  ngOnDestroy() { this.clearTimer(); }
+  start() { this.countDown(); }
+  stop()  {
+    this.clearTimer();
+    this.message = `Holding at T-${this.seconds} seconds`;
+  }
+  private countDown() {
+    this.clearTimer();
+    this.intervalId = window.setInterval(() => {
+      this.seconds -= 1;
+      if (this.seconds === 0) {
+        this.message = 'Blast off!';
+      } else {
+        if (this.seconds < 0) { this.seconds = 10; } // reset
+        this.message = `T-${this.seconds} seconds and counting`;
+      }
+    }, 1000);
+  }
+}
+
+@Component({
+  selector: 'countdown-parent-lv',
+  template: `
+  <h3>Countdown to Liftoff (via local variable)</h3>
+  <button (click)="timer.start()">Start</button>
+  <button (click)="timer.stop()">Stop</button>
+  <div class="seconds">{{timer.seconds}}</div>
+  <countdown-timer #timer></countdown-timer>
+  `,
+  directives: [CountdownTimerComponent],
+  styleUrls: ['demo.css']
+})
+export class CountdownLocalVarParentComponent { }
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+Parents Calls a View Child
+
+The local variable approach is simple and easy. But it is limited because the parent-child wiring must be done entirely within the parent template. 
+The parent component itself has no access to the child.
+We can't use the local variable technique if an instance of the parent component class 
+must read or write child component values or must call child component methods.
+When the parent component class requires that kind of access, we inject the child component into the parent as a ViewChild.
+
+//The child CountdownTimerComponent is the same
+
+import { AfterViewInit, ViewChild } from '@angular/core';
+import { Component }                from '@angular/core';
+
+@Component({
+  selector: 'countdown-parent-vc',
+  template: `
+  <h3>Countdown to Liftoff (via ViewChild)</h3>
+  <button (click)="start()">Start</button>
+  <button (click)="stop()">Stop</button>
+  <div class="seconds">{{ seconds() }}</div>
+  <countdown-timer></countdown-timer>
+  `,
+  directives: [CountdownTimerComponent],
+  styleUrls: ['demo.css']
+})
+export class CountdownViewChildParentComponent implements AfterViewInit {
+  @@ViewChild(CountdownTimerComponent)
+  private timerComponent: CountdownTimerComponent;
+  seconds() { return 0; }
+  ngAfterViewInit() {
+    // Redefine `seconds()` to get from the `CountdownTimerComponent.seconds` ...
+    // but wait a tick first to avoid one-time devMode
+    // unidirectional-data-flow-violation error
+    setTimeout(() => this.seconds = () => this.timerComponent.seconds, 0);
+    //setTimeout(function(){ alert("Hello"); }, 3000); Display an alert box after 3 seconds (3000 milliseconds):
+  }
+  start() { this.timerComponent.start(); }
+  stop() { this.timerComponent.stop(); }
+}
+
+It takes a bit more work to get the child view into the parent component classs.
+We import references to the ViewChild decorator and the AfterViewInit lifecycle hook.
+We inject the child CountdownTimerComponent into the private timerComponent property via the @ViewChild property decoration
+Instead we bind the buttons to the parent component's own start and stop methods and present the ticking seconds 
+in an interpolation around the parent component's seconds method.
+
+These methods access the injected timer component directly.
+
+The ngAfterViewInit lifecycle hook is an important wrinkle. The timer component isn't available until after Angular displays the parent view. 
+So we display 0 seconds initially.
+
+Then Angular calls the ngAfterViewInit lifecycle hook at which time it is too late to update the parent view's display of the countdown seconds. 
+Angular's unidirectional data flow rule prevents us from updating the parent view's in the same cycle. 
+We have to wait one turn before we can display the seconds.
+
+We use setTimeout to wait one tick and then revise the seconds method so that it takes future values from the timer component.
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+Parent and Children Communication Via A service
+
+A parent component and its children share a service whose interface enables bi-directional communication within the family.
+The scope of the service instance is the parent component and its children. 
+Components outside this component subtree have no access to the service or their communications.
+This MissionService connects the MissionControlComponent to multiple AstronautComponent children.
+
+
+//Mission Service
+import { Injectable } from '@angular/core';
+import { Subject }    from 'rxjs/Subject';
+@Injectable()
+export class MissionService {
+  // Observable string sources
+  private missionAnnouncedSource = new Subject<string>();
+  private missionConfirmedSource = new Subject<string>();
+  // Observable string streams
+  missionAnnounced$ = this.missionAnnouncedSource.asObservable();
+  missionConfirmed$ = this.missionConfirmedSource.asObservable();
+  // Service message commands
+  announceMission(mission: string) {
+    this.missionAnnouncedSource.next(mission);
+  }
+  confirmMission(astronaut: string) {
+    this.missionConfirmedSource.next(astronaut);
+  }
+}
+
+The MissionControlComponent both provides the instance of the service that it shares with its children (through the providers metadata array) 
+and injects that instance into itself through its constructor:
+
+@Component({
+  selector: 'mission-control',
+  template: `
+    <h2>Mission Control</h2>
+    <button (click)="announce()">Announce mission</button>
+    <my-astronaut *ngFor="let astronaut of astronauts"
+      [astronaut]="astronaut">
+    </my-astronaut>
+    <h3>History</h3>
+    <ul>
+      <li *ngFor="let event of history">{{event}}</li>
+    </ul>
+  `,
+  directives: [AstronautComponent],
+  providers: [MissionService]
+})
+export class MissionControlComponent {
+  astronauts = ['Lovell', 'Swigert', 'Haise'];
+  history: string[] = [];
+  missions = ['Fly to the moon!',.
+              'Fly to mars!',
+              'Fly to Vegas!'];
+  nextMission = 0;
+  constructor(private missionService: MissionService) {
+    missionService.missionConfirmed$.subscribe(//This helps it listen to the other component
+      astronaut => {
+        this.history.push(`${astronaut} confirmed the mission`);
+      });
+  }
+  announce() {
+    let mission = this.missions[this.nextMission++];
+    this.missionService.announceMission(mission); //This sends information to service which sends it to other component
+    this.history.push(`Mission "${mission}" announced`);
+    if (this.nextMission >= this.missions.length) { this.nextMission = 0; }
+  }
+}
+
+The AstronautComponent also injects the service in its constructor. 
+Each AstronautComponent is a child of the MissionControlComponent and therefore receives its parent's service instance:
+
+@Component({
+  selector: 'my-astronaut',
+  template: `
+    <p>
+      {{astronaut}}: <strong>{{mission}}</strong>
+      <button
+        (click)="confirm()"
+        [disabled]="!announced || confirmed">
+        Confirm
+      </button>
+    </p>
+  `
+})
+export class AstronautComponent implements OnDestroy {
+  @Input() astronaut: string;
+  mission = '<no mission announced>';
+  confirmed = false;
+  announced = false;
+  subscription: Subscription;
+  constructor(private missionService: MissionService) {
+    this.subscription = missionService.missionAnnounced$.subscribe( //Listens to the anouncements of other component
+      mission => {
+        this.mission = mission;
+        this.announced = true;
+        this.confirmed = false;
+    });
+  }
+  confirm() {
+    this.confirmed = true; 
+    this.missionService.confirmMission(this.astronaut); //Sends message to other component
+  }
+  ngOnDestroy() {
+    // prevent memory leak when component destroyed
+    this.subscription.unsubscribe();
+  }
+}
+
+
+*/

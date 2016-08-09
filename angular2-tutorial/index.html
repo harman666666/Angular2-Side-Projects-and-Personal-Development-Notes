@@ -1,0 +1,89 @@
+<!doctype html>
+<!--
+Why do I need a webserver? If you’ve developed javascript applications before you
+probably know that sometimes you can simply open up the index.html file by double
+clicking on it and view it in your browser. This won’t work for us because we’re using
+SystemJS.
+When you open the index.html file directly, your browser is going to use a file:/// URL.
+Because of security restrictions, your browser will not allow AJAX requests to happen
+when using the file:/// protocol (this is a good thing because otherwise javascript could
+read any file on your system and do something malicious with it).
+So instead we run a local webserver that simply serve whatever is on the filesystem. This is
+really convenient for testing, but not how you would deploy your production application.
+
+Instead of having to run tsc everytime
+we make a change, we can take advantage of the --watch option. The --watch option will tell tsc
+to stay running and watch for any changes to our TypeScript files and automatically recompile to
+JavaScript on every change:
+tsc --watch
+
+-->
+<html> 
+  <head>
+      <!--
+      This line declares the base HTML tag. This tag is traditionally used to tell the browser where to look
+for images and other resources declared using relative paths.
+It turns out Angular Router also relies on this tag to determine how to construct its routing
+information.
+      
+      For instance, if we have a route with a path of /hello and our base element declares href="/app",
+the application will use /app/# as the concrete path.
+Sometimes though, coders of an Angular application don’t have access to the head section of the
+application HTML. This is true for instance, when reusing headers and footers of a larger, preexisting
+application.
+Fortunately there is a workaround for this cases. You can declare the application base path
+programmatically, when bootstrapping the Angular application:
+1 bootstrap(RoutesDemoApp, [
+2 ROUTER_PROVIDERS,
+3 provide(APP_BASE_HREF, {useValue: '/'})
+4 ]);
+Injecting the result from provide(APP_BASE_HREF, {useValue: '/'}) is the equivalent of using
+<base href="/"> on our application HTML header.
+      -->
+     <base href="/"> 
+      
+    <link rel="icon" type="image/png" href="resources/images/favicon-32x32.png" sizes="32x32" />
+    <link rel="icon" href="resources/images/favicon.ico" />
+    <title>Anuglar 2 Reddit</title>
+    <!-- Libraries -->
+    <script src="node_modules/es6-shim/es6-shim.js"></script>
+    <script src="node_modules/zone.js/dist/zone.js"></script>
+    <script src="node_modules/reflect-metadata/Reflect.js"></script>
+    <script src="node_modules/systemjs/dist/system.src.js"></script>
+    
+    <!-- Stylesheet -->
+    <link rel="stylesheet" type="text/css" href="resources/vendor/semantic.min.css">
+    <link rel="stylesheet" type="text/css" href="styles.css">
+  </head>
+  <body>
+    <script src="systemjs.config.js"></script>
+    <script>
+        /*
+         This tells System.js that we want to load app.js as our main entry point. There’s one problem
+though: we don’t have an app.js file yet! (Our file is app.ts, a TypeScript file.)
+        */
+      //  System.import('app.js').then(null, console.error.bind(console));
+        System.import('appz.js').then(null, console.error.bind(console));
+      //  System.import('app').catch(function (err) { console.error(err); });
+    </script>
+
+<!-- <hello-world></hello-world> --> 
+<!--  <reddit>Loading...</reddit> -->
+ <!-- <inventory-app> </inventory-app> -->
+ <!-- <switch-app> </switch-app>-->
+ <!--<more-http></more-http> --> 
+ <!-- <data> </data> -->
+ <!-- <router-app></router-app>-->
+ <!--   <keyup></keyup> -->
+ <!--     <little-tour></little-tour> -->
+  <!--<power-booster></power-booster>-->
+    <!--  <hero-list></hero-list>-->
+    <!--  <unless></unless> 
+      <peek-a-boo></peek-a-boo> 
+      <peek-a-boo-parent></peek-a-boo-parent> 
+      <spy-parent></spy-parent>
+      <after-view-parent></after-view-parent>
+      <after-content-parent></after-content-parent> -->
+      <my-high-dir></my-high-dir>
+  </body>
+</html>

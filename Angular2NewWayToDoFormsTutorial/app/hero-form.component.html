@@ -1,0 +1,252 @@
+
+<!--
+  The Name <input> control has the HTML5 required attribute; the Alter Ego <input> control does not because alterEgo is optional.  
+Internally Angular creates FormControls and registers them with an NgForm directive that Angular attached to the <form> tag. 
+ Each FormControl is registered under the name we assigned to the name attribute. We'll talk about NgForm
+
+Track change-state and validity with ngModel
+Using ngModel in a form gives us more than just two way data binding. It also tells us if the user touched the control,
+if the value changed, or if the value became invalid.
+ngModel doesn't just track state; it updates the control with special Angular CSS classes from the set we listed above. 
+We can leverage those class names to change the appearance of the control and make messages appear or disappear.
+The NgModel directive doesn't just track state. It updates the control with three classes that reflect the state.
+State	                  Class if true	Class if false
+Control has been visited	ng-touched	ng-untouched
+Control's value has changed	ng-dirty	ng-pristine
+Control's value is valid	ng-valid	ng-invalid
+=>THE INPUT CLASS WILL HAVE ALL 3 OF THESE STATES
+    pristine means the user hasn't changed the value since it was displayed in this form.
+
+Let's add a temporary template reference variable named spy to the "Name" <input> tag and use the spy to display those classes.
+<input type="text" class="form-control" required
+  [(ngModel)]="model.name"
+  name="name"  #spy >
+<br>TODO: remove this: {{spy.className}}
+FOR INSTANCE WHEN USING SPY THIS INPUT CLASS COULD BE THIS FOR EXAMPLE: 
+    TODO: remove this: form-control ng-untouched ng-pristine ng-valid
+
+
+The (ng-valid | ng-invalid) pair are most interesting to us. We want to send a strong visual signal when the data are invalid and we want to mark required fields.
+We realize we can do both at the same time with a colored bar on the left of the input box:
+
+We achieve this effect by adding two styles to a new forms.css file that we add to our project as a sibling to index.html.
+
+forms.css   
+These styles select for the two Angular validity classes and the HTML 5 "required" attribut
+
+.ng-valid[required] {   => THE INPUTS CLASS WILL BE EITHER OF THESE OR THE ONES DISCUSSED AND HAVE ITS STYLING FORMATTED AS SUCH
+  border-left: 5px solid #42A948; /* green */
+}
+.ng-invalid {
+  border-left: 5px solid #a94442; /* red */
+}
+
+SUBMIT BUTTON AND NGFORM
+The user should be able to submit this form after filling it in. The Submit button at the bottom of the form does nothing on its own 
+but it will trigger a form submit because of its type (type="submit").
+A "form submit" is useless at the moment. To make it useful, we'll update the <form> tag with another Angular directive, 
+NgSubmit, and bind it to the HeroFormComponent.submit() method with an event binding
+<form *ngIf="active" (ngSubmit)="onSubmit()" #heroForm="ngForm">
+We slipped in something extra there at the end! We defined a template reference variable, 
+#heroForm, and initialized it with the value, "ngForm".
+The variable heroForm is now a reference to the NgForm directive that governs the form as a whole.
+
+The NgForm directive
+What NgForm directive? We didn't add an NgForm directive!
+Angular did. Angular creates and attaches an NgForm directive to the <form> tag automatically.
+The NgForm directive supplements the form element with additional features. It holds the controls we created for the 
+elements with ngModel directive and name attribute and monitors their properties including their validity. It also has its 
+own valid property which is true only if every contained control is valid.
+
+-->
+<div class="container">
+  <div  [hidden]="submitted">
+    <h1>Hero Form</h1>
+    <form *ngIf="active" (ngSubmit)="onSubmit()" #heroForm="ngForm">
+      <div class="form-group">
+        <label for="name">Name</label>
+        <input type="text" class="form-control" required
+          [(ngModel)]="model.name"
+            name="name"  #name="ngModel" >
+          <!--Notice that we also added a name attribute to our <input> tag. This is a requirement when using [(ngModel)] 
+              in combination with a form, so that we can easily refer to it in the aggregate form value and validity state. 
+              NOT THE HASHTAG NAME THE OTHER NAME-->
+        <div [hidden]="name.valid || name.pristine" class="alert alert-danger">
+          Name is required
+            <!--
+               RED REQUIRED BOX VISUAL
+                To achieve this effect we extend the <input> tag with 
+                1. a template reference variable 
+                2. the "is required" message in a nearby <div>  which we'll display only if the control is invalid.
+                We need a template reference variable to access the input box's Angular control from within the template. 
+                Here we created a variable called name and gave it the value "ngModel".
+                Why "ngModel"? A directive's exportAs property tells Angular how to link the reference variable to the directive. 
+                We set name to ngModel because the ngModel directive's exportAs property happens to be "ngModel".
+                Now we can control visibility of the "name" error message by binding properties of the name control to the message <div> element's hidden property.
+            -->
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="alterEgo">Alter Ego</label>
+        <input type="text" class="form-control"
+          [(ngModel)]="model.alterEgo"
+            name="alterEgo" >
+      </div>
+
+      <div class="form-group">
+        <label for="power">Hero Power</label>
+        <select class="form-control" required
+          [(ngModel)]="model.power"
+            name="power" #power="ngModel" >
+          <option *ngFor="let p of powers" [value]="p">{{p}}</option> 
+            <!--We'll add a select to our form and bind the options to the powers list using ngFor-->
+        </select>
+        <div [hidden]="power.valid || power.pristine" class="alert alert-danger">
+          Power is required
+        </div>
+      </div>
+
+      <!--we bind the button's disabled property to the form's over-all validity via the heroForm variable.-->
+      <button type="submit" class="btn btn-default" [disabled]="!heroForm.form.valid">Submit</button>
+
+      <button type="button" class="btn btn-default" (click)="newHero()">New Hero</button>
+
+     <!-- NOT SHOWN IN DOCS -->
+      <div>
+        <hr>
+        Name via form.controls = {{showFormControls(heroForm)}}
+      </div>
+     <!-- - -->
+    </form>
+  </div>
+<!--
+There's our hero again, displayed read-only with interpolation bindings. This slug of HTML only appears while the component is in the submitted state.    
+-->
+  <div [hidden]="!submitted">
+    <h2>You submitted the following:</h2>
+    <div class="row">
+      <div class="col-xs-3">Name</div>
+      <div class="col-xs-9  pull-left">{{ model.name }}</div>
+    </div>
+    <div class="row">
+      <div class="col-xs-3">Alter Ego</div>
+      <div class="col-xs-9 pull-left">{{ model.alterEgo }}</div>
+    </div>
+    <div class="row">
+      <div class="col-xs-3">Power</div>
+      <div class="col-xs-9 pull-left">{{ model.power }}</div>
+    </div>
+    <br>
+    <button class="btn btn-default" (click)="submitted=false">Edit</button>
+  </div>
+</div>
+
+<!-- ====================================================  -->
+  <div>
+    <form>
+
+       <!-- ... all of the form ... -->
+
+    </form>
+  </div>
+
+<!-- ====================================================  -->
+<hr>
+<style>
+  .no-style .ng-valid {
+  border-left: 1px  solid #CCC
+}
+
+  .no-style .ng-invalid {
+  border-left: 1px  solid #CCC
+}
+</style>
+<div class="no-style" style="margin-left: 4px">
+  <div class="container">
+      <h1>Hero Form</h1>
+      <form>
+        <div class="form-group">
+          <label for="name">Name</label>
+          <input type="text" class="form-control" required>
+        </div>
+
+        <div class="form-group">
+          <label for="alterEgo">Alter Ego</label>
+          <input type="text" class="form-control">
+        </div>
+
+        <div class="form-group">
+          <label for="power">Hero Power</label>
+          <select class="form-control" required>
+            <option *ngFor="let p of powers" [value]="p">{{p}}</option>
+          </select>
+        </div>
+
+        <button type="submit" class="btn btn-default">Submit</button>
+
+      </form>
+  </div>
+
+  <!-- ====================================================  -->
+  <hr>
+  <div class="container">
+      <h1>Hero Form</h1>
+      <form>
+        {{diagnostic}}
+        <div class="form-group">
+          <label for="name">Name</label>
+          <input type="text" class="form-control" required
+            [(ngModel)]="model.name" name="name">
+        </div>
+
+        <div class="form-group">
+          <label for="alterEgo">Alter Ego</label>
+          <input type="text"  class="form-control"
+            [(ngModel)]="model.alterEgo" name="alterEgo">
+        </div>
+
+        <div class="form-group">
+          <label for="power">Hero Power</label>
+          <select class="form-control"  required
+            [(ngModel)]="model.power" name="power">
+            <option *ngFor="let p of powers" [value]="p">{{p}}</option>
+          </select>
+        </div>
+
+        <button type="submit" class="btn btn-default">Submit</button>
+
+      </form>
+  </div>
+
+  <!-- EXTRA MATERIAL FOR DOCUMENTATION -->
+  <hr>
+    <input type="text"  class="form-control" required
+      [(ngModel)]="model.name" name="name">
+      TODO: remove this: {{model.name}}
+  <hr>
+    <input type="text" class="form-control" required
+      [ngModel]="model.name"
+      (ngModelChange)="model.name = $event" >
+      TODO: remove this: {{model.name}}
+  <hr>
+  <form *ngIf="active">
+
+       <input type="text" class="form-control" required
+         [(ngModel)]="model.name"
+         name="name" >
+  <hr>
+       <input type="text" class="form-control" required
+         [(ngModel)]="model.name"
+         name="name"  #spy >
+       <br>TODO: remove this: {{spy.className}}
+  </form>
+
+</div>
+
+
+<!-- 
+Copyright 2016 Google Inc. All Rights Reserved.
+Use of this source code is governed by an MIT-style license that
+can be found in the LICENSE file at http://angular.io/license
+-->
